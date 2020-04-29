@@ -1,3 +1,8 @@
+# Amazon_LDA.py
+# 4/28/20
+# @jessicakaye
+# Used to conduct LDA on the top 5 most reviewed Amazon products in a dataset
+
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
