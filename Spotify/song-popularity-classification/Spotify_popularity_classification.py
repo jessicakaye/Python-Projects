@@ -1,8 +1,13 @@
-import math
+# Spotify_Preprocessing.py
+# 4/24/20
+# @jessicakaye
+# Used to conduct classification for popularity label based on song features and other decided numeric features
+# Algorithms include KNN, Decision Tree (CART), Random Forest, and Naive Bayes*** with option to include Logistic Regression and SVM
+# ***PCA conducted prior to Naive Bayes
+
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import time
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier
@@ -54,42 +59,42 @@ plt.figure()
 sns.heatmap(spotify_df[variables].corr(), annot=True, fmt='.1g', cmap='coolwarm')
 plt.tight_layout()
 
-# #Is our data linearly separable?
-# spotify_df['Popular'] = pd.get_dummies(spotify_df['popularity_class_label'], drop_first=True)
-#
-# x = spotify_df[variables]
-# y = spotify_df['Popular']
-# sc = StandardScaler()
-# x = sc.fit_transform(x)
-#
-# svm = svm.SVC(C=1.0, kernel='linear', random_state=0)
-# svm.fit(x, y)
-#
-# predicted = svm.predict(x)
-#
-# cm = confusion_matrix(y, predicted)
-#
-# plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Wistia)
-# classNames = ['Negative', 'Positive']
-# plt.title('SVM Linear Kernel Confusion Matrix - Popular')
-# plt.ylabel('True label')
-# plt.xlabel('Predicted label')
-# tick_marks = np.arange(len(classNames))
-# plt.xticks(tick_marks, classNames, rotation=45)
-# plt.yticks(tick_marks, classNames)
-# s = [['TN', 'FP'], ['FN', 'TP']]
-#
-# for i in range(2):
-#     for j in range(2):
-#         plt.text(j, i, str(s[i][j]) + " = " + str(cm[i][j]))
-# print((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][1]+cm[1][0]))
-# plt.show()
+#Is our data linearly separable?
+spotify_df['Popular'] = pd.get_dummies(spotify_df['popularity_class_label'], drop_first=True)
 
-# Let's try using t-Distributed Stochastic Neighbouring Entities (t-SNE)
-# t-SNE looks at how to best represent data by looking at:
-# a distribution that measures pairwise similarities of the input objects and
-# a distribution that measures pairwise similarities of the corresponding low-dimensional points in the embedding
-# This technique is best for VISUALIZING YOUR DATA ONLY. Does not work with any density or distance-based algorithm
+x = spotify_df[variables]
+y = spotify_df['Popular']
+sc = StandardScaler()
+x = sc.fit_transform(x)
+
+svm = svm.SVC(C=1.0, kernel='linear', random_state=0)
+svm.fit(x, y)
+
+predicted = svm.predict(x)
+
+cm = confusion_matrix(y, predicted)
+
+plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Wistia)
+classNames = ['Negative', 'Positive']
+plt.title('SVM Linear Kernel Confusion Matrix - Popular')
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+tick_marks = np.arange(len(classNames))
+plt.xticks(tick_marks, classNames, rotation=45)
+plt.yticks(tick_marks, classNames)
+s = [['TN', 'FP'], ['FN', 'TP']]
+
+for i in range(2):
+    for j in range(2):
+        plt.text(j, i, str(s[i][j]) + " = " + str(cm[i][j]))
+print((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][1]+cm[1][0]))
+plt.show()
+
+Let's try using t-Distributed Stochastic Neighbouring Entities (t-SNE)
+t-SNE looks at how to best represent data by looking at:
+a distribution that measures pairwise similarities of the input objects and
+a distribution that measures pairwise similarities of the corresponding low-dimensional points in the embedding
+This technique is best for VISUALIZING YOUR DATA ONLY. Does not work with any density or distance-based algorithm
 
 time_start = time.time()
 tsne = TSNE(n_components=2, verbose=1, perplexity=50, n_iter=300)
