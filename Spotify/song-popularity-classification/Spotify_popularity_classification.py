@@ -2,7 +2,8 @@
 # 4/24/20
 # @jessicakaye
 # Used to conduct classification for popularity label based on song features and other decided numeric features
-# Algorithms include KNN, Decision Tree (CART), Random Forest, and Naive Bayes*** with option to include Logistic Regression and SVM
+# Algorithms include KNN, Decision Tree (CART), Random Forest, and Naive Bayes*** with option to include
+# Logistic Regression and SVM
 # ***PCA conducted prior to Naive Bayes
 
 import pandas as pd
