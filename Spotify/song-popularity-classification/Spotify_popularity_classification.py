@@ -1,4 +1,4 @@
-# Spotify_Preprocessing.py
+# Spotify_popularity_classification.py
 # 4/24/20
 # @jessicakaye
 # Used to conduct classification for popularity label based on song features and other decided numeric features
