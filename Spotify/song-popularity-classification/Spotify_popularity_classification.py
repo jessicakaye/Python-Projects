@@ -88,7 +88,6 @@ for i in range(2):
     for j in range(2):
         plt.text(j, i, str(s[i][j]) + " = " + str(cm[i][j]))
 print((cm[0][0]+cm[1][1])/(cm[0][0]+cm[0][1]+cm[1][1]+cm[1][0]))
-plt.show()
 
 Let's try using t-Distributed Stochastic Neighbouring Entities (t-SNE)
 t-SNE looks at how to best represent data by looking at:
