@@ -1,7 +1,7 @@
 # Amazon_LDA.py
 # 4/28/20
 # @jessicakaye
-# Used to conduct LDA on the top 5 most reviewed Amazon products in a dataset
+# Used to conduct LDA on the top 10 most reviewed Amazon products in a dataset
 
 import pandas as pd
 import numpy as np
@@ -150,7 +150,7 @@ all_words_and_topics = pd.DataFrame(columns=['topicID', 'words', 'asin', 'num do
 all_asins_df = pd.DataFrame(columns=list(amazon_df.columns.values))
 
 # We want to find the top words per product. Let's create a loop.
-for asin in list_asins[0:5]:
+for asin in list_asins:
     asin_df = amazon_df.loc[amazon_df['asin'] == str(asin)]
     asin_df.reset_index(inplace=True)
     # Initialise the count vectorizer with the English stop words
