@@ -34,13 +34,6 @@ auth.authenticate_user()
 
 #@title Main Functions & Setup
 
-# === Constants ===
-SHARED_DRIVE_BASE = '/content/drive/Shareddrives/'
-PAGE_WIDTH = 975
-# Shared Drive and Parent Folder IDs
-SHARED_DRIVE_ID = ''  # Replace with your actual Shared Drive ID
-PARENT_FOLDER_ID = ''  # Replace with your actual Parent Folder ID
-
 # === UI Elements ===
 dropdown = widgets.Dropdown(
     options=["7 days", "14 days", "28 days", "90 days"],
@@ -132,15 +125,42 @@ def on_select_click(b):
         return
 
     # Show file search button and proceed
-    selected = dropdown.value.split()[0]
-    pattern = re.compile(rf'{selected}\s*days.*dashboard', re.IGNORECASE)
+    # --- PDF Matching with Optional Debug Output and Flexible Pattern ---
 
-    matched_files = [f for f in os.listdir(folder_path)
-                     if f.lower().endswith(".pdf") and pattern.search(f)]
+    selected = dropdown.value.split()[0]  # e.g., '7'
+    folder_path = os.path.join(SHARED_DRIVE_BASE, folder_input.value.strip())
+
+    # Flexible pattern:
+    # - Accepts '7days', '7_days', '7-days', etc.
+    # - Accepts 'dashboard' or 'dash'
+    # - Allows words in any order
+    selected_pattern = re.escape(selected)
+    days_pattern = rf"{selected_pattern}[\s_-]*day"
+    dash_pattern = r"(dash(board)?)"
+
+    # Final pattern: allows for any words between
+    pattern = re.compile(rf"(?=.*{days_pattern})(?=.*{dash_pattern}).*\.pdf", re.IGNORECASE)
+
+    # Debugging info (commented)
+    # print(f"\n🔎 Regex pattern: {pattern.pattern}")
+    # print(f"📁 Folder path: {folder_path}")
+
+    if not os.path.exists(folder_path):
+        # print("❌ Folder does not exist.")
+        matched_files = []
+    else:
+        all_files = os.listdir(folder_path)
+        # print(f"📄 All files: {all_files}")
+
+        matched_files = [f for f in all_files if pattern.search(f)]
+        # print(f"✅ Matching files: {matched_files}")
 
     if not matched_files:
-        print("\n ❌ No matching PDFs found.")
-        return
+      clear_output(wait=True)
+      display(dropdown, folder_input, media_type_radio, returning_season_radio, select_button)
+      print(f"\n❌ No matching dashboard PDFs found for '{duration} days' in folder:\n📁 {folder_path}")
+      return
+
 
     file_selector.options = matched_files
     file_selector.value = matched_files[0]
@@ -150,7 +170,9 @@ def on_select_click(b):
     else:
         print(f"\n\n 📄 Found {len(matched_files)} matching files. Please select one.")
 
-        # Make them visible first
+
+######################################
+    # Make them visible first
     file_selector.layout.display = None
     crop_button.layout.display = None
 
@@ -187,7 +209,7 @@ def crop_top_and_bottom(file_path, output_path, option, is_series, is_returning_
                 crop_box = (0, 880)
 
             if option == "7":
-              crop_box = crop_box[0],crop_box[1]-60
+              crop_box = crop_box[0],crop_box[1]-45
 
             # Only one crop
             cropped_page = deepcopy(page)
@@ -289,41 +311,46 @@ def on_crop_click(b):
 
 
 # Function to search for a folder by name and get the folder ID
-def search_folder_id_in_shared_drive(shared_drive_id, search_query=None):
-    try:
-        # Build the Google Drive API client
-        drive_service = build('drive', 'v3')
+def search_folder_id_in_shared_drive(shared_drive_id, search_path=None):
+    from googleapiclient.discovery import build
+    drive_service = build('drive', 'v3')
 
-        # Base query to search for folders in the shared drive
-        query = f"mimeType='application/vnd.google-apps.folder'"
+    def find_nested_folder_id(parent_id, nested_path):
+        parts = nested_path.strip('/').split('/')
+        current_parent_id = parent_id
 
-        # If a search query (folder name) is provided, append it to the filter
-        if search_query:
-            query += f" and name contains '{search_query}'"
+        for part in parts:
+            query = f"'{current_parent_id}' in parents and name = '{part}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            results = drive_service.files().list(
+                q=query,
+                corpora='drive',
+                driveId=shared_drive_id,
+                includeItemsFromAllDrives=True,
+                supportsAllDrives=True,
+                fields='files(id, name)',
+                pageSize=10
+            ).execute()
+            folders = results.get('files', [])
+            if not folders:
+                raise Exception(f"Folder '{part}' not found under parent ID: {current_parent_id}")
+            current_parent_id = folders[0]['id']
+        return current_parent_id
 
-        # Execute the search query
+    if not search_path:
         results = drive_service.files().list(
-            q=query,
-            driveId=shared_drive_id,  # Shared Drive ID
-            corpora='drive',  # Limit search to the Shared Drive
+            q=f"'{shared_drive_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            corpora='drive',
+            driveId=shared_drive_id,
             includeItemsFromAllDrives=True,
             supportsAllDrives=True,
-            fields="files(id, name)"
+            fields='files(id, name)',
+            pageSize=100
         ).execute()
+        return results.get('files', [])
 
-        items = results.get('files', [])
+    return find_nested_folder_id(PARENT_FOLDER_ID, search_path)
 
-        if not items:
-            print(f'No folder found with name containing "{search_query}" in Shared Drive.')
-            return None
-        else:
-            # for item in items:
-            #     # print(f"Folder Name: {item['name']}, Folder ID: {item['id']}")
-            return items[0]['id']  # Return the ID of the first matching folder (assuming there's only one match)
 
-    except HttpError as error:
-        print(f"An error occurred: {error}")
-        return None
 
 # Function to search for a Google Slides document based on the dropdown value
 def search_slides_in_folder(shared_drive_id, folder_id, option):
@@ -332,10 +359,10 @@ def search_slides_in_folder(shared_drive_id, folder_id, option):
         drive_service = build('drive', 'v3')
 
         # Create the search query based on the dropdown option and "highlights"
-        search_query = f"{option.replace(' ', '%')}%highlights"  # Replace spaces with wildcards
+        # search_query = f"{option.replace(' ', '%')}%highlights"  # Replace spaces with wildcards
 
         # Base query to search for Google Slides within the folder
-        query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.presentation' and name contains '{search_query}'"
+        query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.presentation' and name contains '{option}' and name contains 'highlights'"
 
         # Execute the search query
         results = drive_service.files().list(
@@ -469,6 +496,8 @@ def on_merge_click(b):
 select_button.on_click(on_select_click)
 crop_button.on_click(on_crop_click)
 merge_button.on_click(on_merge_click)
+#@title Display Input Options
+
 
 #@title Display Input Options
 
